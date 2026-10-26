@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+httpx
+pydantic>=2
+python-dotenv
+pandas
+duckdb
+pyarrow
+sqlglot
+snowflake-connector-python[pandas]
+sse-starlette
+pytest
+pytest-asyncio
