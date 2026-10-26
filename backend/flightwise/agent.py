@@ -21,7 +21,7 @@ MAX_ITERS = 6           # LLM calls per user turn; the last one is made without 
 HISTORY_KEEP = 12       # messages returned in `done.history`
 LIST_CAP = 5            # list items shown to the model per tool result
 ROWS_CAP = 12           # nl2sql rows shown to the model
-RISK_TOP_N = 3          # search offers enriched with delay risk
+RISK_TOP_N = 8   # risk lookups are cheap SQL; score every offer
 
 
 # --------------------------------------------------------------------------- tool schemas
@@ -130,9 +130,9 @@ Next days: {_date_context(today)}. Always pass dates to tools as YYYY-MM-DD.
 Use tools for every fact; never invent flight times, prices or percentages. Chain tools on your own:
 - "track/status of <flight>": call track_flight (it already includes delay risk). If the user wants to be kept
   updated or notified, also call watch_flight; otherwise offer to watch it in one line.
-- "find a flight A to B <day>": call search_flights. Top offers come with delay risk; if any lack it, call
-  delay_risk(carrier, origin, hour) for the top 2-3. Recommend the most reliable good option, not just the
-  cheapest, and say why (price vs % delayed). Risk label "unknown" means too little history: don't call it reliable.
+- "find a flight A to B <day>": call search_flights. Offers come with delay risk, and the best balance of
+  reliability, price and stops is marked "recommended": true with a "why". Recommend that offer and give its why;
+  mention the cheapest as an alternative if different. Risk label "unknown" means too little history.
 - Questions about history/trends (which airline, which airport, which month): call query_delay_history.
 - "what am I watching": call list_watched.
 Quote times from the *_local fields (raw ISO times are UTC). If delay risk shows an error, say history is
@@ -220,7 +220,28 @@ async def t_search_flights(origin: str, destination: str, date: str) -> Any:
         if i < RISK_TOP_N:
             carrier = o.get("airline_code") or _carrier_of({"flight_number": (o.get("flight_numbers") or [""])[0]})
             o["risk"] = await _safe_risk(carrier, o["origin"], _hour_of(o.get("departure"), o["origin"]))
+    _mark_recommended(offers)
     return offers
+
+
+def _offer_score(o: dict) -> float | None:
+    """Lower is better: % delayed >= 15 min, plus $10 ~ 1 point and 10 points per stop.
+    Offers without known delay history can't be recommended."""
+    risk = o.get("risk") or {}
+    if risk.get("label") in (None, "unknown") or risk.get("pct_delayed_15") is None:
+        return None
+    return risk["pct_delayed_15"] + (o.get("price") or 0) / 10 + 10 * (o.get("stops") or 0)
+
+
+def _mark_recommended(offers: list[dict]) -> None:
+    """Pick the recommendation in code, not in the model, so it's deterministic and explainable."""
+    scored = [(sc, o) for o in offers if (sc := _offer_score(o)) is not None]
+    if scored:
+        best = min(scored, key=lambda t: t[0])[1]
+        best["recommended"] = True
+        best["why"] = (f"{best['risk']['pct_delayed_15']:.0f}% of similar flights delayed 15+ min, "
+                       f"${best.get('price') or 0:.0f}, {best.get('stops', 0)} stop(s)")
+        offers.insert(0, offers.pop(offers.index(best)))   # the model only sees the first few offers
 
 
 async def t_track_flight(flight_number: str, date: str | None = None) -> Any:

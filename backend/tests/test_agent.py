@@ -222,7 +222,7 @@ def test_real_backends_wiring(monkeypatch):
 
     res, ok = asyncio.run(agent.call_tool("search_flights", {"origin": "okc", "destination": "den", "date": "2026-10-30"}))
     assert ok and len(res) == 5
-    assert all("risk" in o for o in res[:3]) and "risk" not in res[3]
+    assert all("risk" in o for o in res)
     text = agent.to_model_text(res)
     model_view = json.loads(text)
     assert len(model_view) == 5 and "sql" not in model_view[0]["risk"]
@@ -235,3 +235,15 @@ def test_local_hour_for_bts():
     assert agent._hour_of("2026-10-26T22:44:00Z", "XYZ") is None    # unknown airport + UTC: don't guess
     assert agent._hour_of("2026-10-26T07:30:00", "XYZ") == 7        # naive = already local
     assert agent._local_str("2026-10-26T22:44:00Z", "CLT") == "Mon 18:44 local"
+
+
+def test_recommendation_prefers_reliable_known_risk():
+    offers = [
+        {"price": 60, "stops": 0, "risk": {"label": "unknown", "pct_delayed_15": None}},
+        {"price": 80, "stops": 0, "risk": {"label": "low", "pct_delayed_15": 12.0}},
+        {"price": 70, "stops": 1, "risk": {"label": "medium", "pct_delayed_15": 26.0}},
+        {"price": 50, "stops": 0, "risk": {"error": "delay history unavailable"}},
+    ]
+    agent._mark_recommended(offers)
+    assert [bool(o.get("recommended")) for o in offers] == [True, False, False, False]
+    assert "12%" in offers[0]["why"] and offers[0]["price"] == 80
