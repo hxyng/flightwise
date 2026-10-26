@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, Iterator
 
 import httpx
 
 from . import config
 
-OPTIONS = {"num_ctx": 16384, "temperature": 0}   # keep constant: changing num_ctx reloads the model
+OPTIONS = {"num_ctx": 16384, "temperature": 0, "num_predict": 400}   # keep constant: changing num_ctx reloads the model
 _client = httpx.Client(base_url=config.OLLAMA_URL, timeout=180)
 
 
@@ -27,6 +27,23 @@ def chat(messages: list[dict], tools: list[dict] | None = None,
     r = _client.post("/api/chat", json=body)
     r.raise_for_status()
     return r.json()["message"]
+
+
+def chat_stream(messages: list[dict], tools: list[dict] | None = None,
+                think: bool = False) -> Iterator[dict]:
+    """Streaming /api/chat. Yields each chunk's `message` dict; content arrives piece by
+    piece, tool_calls usually in one chunk near the end."""
+    body: dict[str, Any] = {
+        "model": config.OLLAMA_MODEL, "messages": messages, "stream": True,
+        "think": think, "keep_alive": "30m", "options": OPTIONS,
+    }
+    if tools:
+        body["tools"] = tools
+    with _client.stream("POST", "/api/chat", json=body) as r:
+        r.raise_for_status()
+        for line in r.iter_lines():
+            if line:
+                yield json.loads(line).get("message", {})
 
 
 def chat_json(messages: list[dict], schema: dict) -> dict:

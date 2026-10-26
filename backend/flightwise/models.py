@@ -101,11 +101,12 @@ class WatchedFlight(BaseModel):
 
 class AgentEvent(BaseModel):
     """One step of the agent, streamed to the UI over SSE (event name = type)."""
-    type: Literal["thinking", "tool_call", "tool_result", "message", "error", "done"]
+    type: Literal["thinking", "tool_call", "tool_result", "delta", "message", "error", "done"]
     data: dict[str, Any] = {}
     # thinking:    {"text"}
     # tool_call:   {"name", "arguments"}
     # tool_result: {"name", "result"}   result = JSON-able payload, e.g. FlightStatus dict
+    # delta:       {"text"}             a streamed piece of the answer; "message" follows with the full text
     # message:     {"text"}             final assistant answer (markdown)
     # error:       {"text"}
     # done:        {"history": [...]}   ollama-format messages to send back next turn
