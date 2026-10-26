@@ -5,4 +5,4 @@
 - [B2] data/nl2sql — DONE
 - [B3] agent — DONE
 - [B4] watcher/api — DONE
-- [B5] frontend — ACTIVE
+- [B5] frontend — DONE

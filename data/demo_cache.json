@@ -1,0 +1,373 @@
+{
+  "ask": {
+    "when s the best time to fly out of okc": {
+      "question": "When's the best time to fly out of OKC?",
+      "sql": "SELECT DEP_HOUR, ROUND(100.0 * AVG(DEP_DEL15), 1) AS PCT_DELAYED, COUNT(*) AS FLIGHTS FROM FLIGHTS WHERE ORIGIN = 'OKC' GROUP BY DEP_HOUR HAVING COUNT(*) >= 30 ORDER BY PCT_DELAYED ASC LIMIT 500",
+      "columns": [
+        "DEP_HOUR",
+        "PCT_DELAYED",
+        "FLIGHTS"
+      ],
+      "rows": [
+        [
+          5,
+          6.1,
+          418
+        ],
+        [
+          7,
+          6.7,
+          763
+        ],
+        [
+          6,
+          7.5,
+          628
+        ],
+        [
+          8,
+          12.7,
+          490
+        ],
+        [
+          9,
+          17.0,
+          156
+        ],
+        [
+          11,
+          18.0,
+          456
+        ],
+        [
+          10,
+          20.0,
+          146
+        ],
+        [
+          14,
+          23.1,
+          338
+        ],
+        [
+          12,
+          23.6,
+          356
+        ],
+        [
+          13,
+          26.1,
+          457
+        ],
+        [
+          15,
+          32.5,
+          339
+        ],
+        [
+          18,
+          34.0,
+          381
+        ],
+        [
+          17,
+          37.3,
+          376
+        ],
+        [
+          16,
+          37.7,
+          392
+        ],
+        [
+          19,
+          42.8,
+          360
+        ],
+        [
+          20,
+          44.1,
+          156
+        ],
+        [
+          21,
+          63.6,
+          44
+        ]
+      ],
+      "chart": {
+        "kind": "line",
+        "x": "DEP_HOUR",
+        "y": "PCT_DELAYED"
+      },
+      "answer": "The best time to fly is at 5, as only 6.1% of flights are delayed. Delays increase significantly later in the day, reaching 63.6% by 21.",
+      "backend": "duckdb",
+      "error": null
+    },
+    "which airline is most reliable": {
+      "question": "Which airline is most reliable?",
+      "sql": "SELECT CARRIER_NAME, ROUND(100.0 * AVG(DEP_DEL15), 1) AS PCT_DELAYED, ROUND(100.0 * AVG(CANCELLED), 2) AS PCT_CANCELLED, COUNT(*) AS FLIGHTS FROM FLIGHTS GROUP BY CARRIER_NAME HAVING COUNT(*) >= 1000 ORDER BY PCT_DELAYED ASC LIMIT 500",
+      "columns": [
+        "CARRIER_NAME",
+        "PCT_DELAYED",
+        "PCT_CANCELLED",
+        "FLIGHTS"
+      ],
+      "rows": [
+        [
+          "Envoy Air",
+          20.4,
+          2.01,
+          87924
+        ],
+        [
+          "Republic Airways",
+          20.8,
+          6.59,
+          93873
+        ],
+        [
+          "Delta Air Lines",
+          21.4,
+          1.53,
+          274412
+        ],
+        [
+          "SkyWest Airlines",
+          21.8,
+          1.36,
+          225239
+        ],
+        [
+          "Alaska Airlines",
+          22.7,
+          1.0,
+          92729
+        ],
+        [
+          "United Airlines",
+          24.0,
+          1.22,
+          219931
+        ],
+        [
+          "Allegiant Air",
+          27.3,
+          0.5,
+          35839
+        ],
+        [
+          "Frontier Airlines",
+          31.8,
+          2.82,
+          59696
+        ],
+        [
+          "American Airlines",
+          32.3,
+          2.07,
+          258440
+        ],
+        [
+          "PSA Airlines",
+          32.3,
+          7.35,
+          63275
+        ],
+        [
+          "JetBlue Airways",
+          33.3,
+          6.01,
+          67484
+        ],
+        [
+          "Southwest Airlines",
+          36.7,
+          0.86,
+          360460
+        ]
+      ],
+      "chart": {
+        "kind": "bar",
+        "x": "CARRIER_NAME",
+        "y": "PCT_DELAYED"
+      },
+      "answer": "Envoy Air is the most reliable airline with a 20.4% delay rate. It also has a low cancellation rate of 2.01%.",
+      "backend": "duckdb",
+      "error": null
+    },
+    "which day of the week has the worst delays": {
+      "question": "Which day of the week has the worst delays?",
+      "sql": "SELECT DAY_OF_WEEK, ROUND(100.0 * AVG(DEP_DEL15), 1) AS PCT_DELAYED, ROUND(AVG(DEP_DELAY), 1) AS AVG_DEP_DELAY, COUNT(*) AS FLIGHTS FROM FLIGHTS GROUP BY DAY_OF_WEEK HAVING COUNT(*) >= 30 ORDER BY AVG_DEP_DELAY DESC LIMIT 500",
+      "columns": [
+        "DAY_OF_WEEK",
+        "PCT_DELAYED",
+        "AVG_DEP_DELAY",
+        "FLIGHTS"
+      ],
+      "rows": [
+        [
+          7,
+          31.8,
+          22.8,
+          270113
+        ],
+        [
+          1,
+          29.4,
+          21.4,
+          290951
+        ],
+        [
+          5,
+          29.4,
+          21.3,
+          270270
+        ],
+        [
+          4,
+          28.7,
+          19.9,
+          271268
+        ],
+        [
+          6,
+          26.2,
+          18.4,
+          235479
+        ],
+        [
+          2,
+          23.0,
+          14.9,
+          248626
+        ],
+        [
+          3,
+          23.4,
+          14.6,
+          252595
+        ]
+      ],
+      "chart": {
+        "kind": "bar",
+        "x": "DAY_OF_WEEK",
+        "y": "PCT_DELAYED"
+      },
+      "answer": "Day 7 has the worst delays with a 31.8% delay rate. The average delay on this day is 22.8.",
+      "backend": "duckdb",
+      "error": null
+    },
+    "what are the worst routes for delays": {
+      "question": "What are the worst routes for delays?",
+      "sql": "SELECT ORIGIN || '-' || DEST AS ROUTE, ROUND(100.0 * AVG(DEP_DEL15), 1) AS PCT_DELAYED, COUNT(*) AS FLIGHTS FROM FLIGHTS GROUP BY ORIGIN || '-' || DEST HAVING COUNT(*) >= 200 ORDER BY PCT_DELAYED DESC LIMIT 10",
+      "columns": [
+        "ROUTE",
+        "PCT_DELAYED",
+        "FLIGHTS"
+      ],
+      "rows": [
+        [
+          "MRY-SFO",
+          61.5,
+          274
+        ],
+        [
+          "MDW-SEA",
+          59.1,
+          259
+        ],
+        [
+          "SAN-SFO",
+          58.6,
+          1947
+        ],
+        [
+          "MDW-SMF",
+          56.1,
+          239
+        ],
+        [
+          "CLT-SFO",
+          55.1,
+          406
+        ],
+        [
+          "DEN-OAK",
+          53.7,
+          452
+        ],
+        [
+          "DFW-SFO",
+          53.3,
+          1266
+        ],
+        [
+          "PHX-SFO",
+          53.0,
+          1164
+        ],
+        [
+          "DAL-LIT",
+          52.7,
+          262
+        ],
+        [
+          "LAX-DAL",
+          52.7,
+          408
+        ]
+      ],
+      "chart": {
+        "kind": "bar",
+        "x": "ROUTE",
+        "y": "PCT_DELAYED"
+      },
+      "answer": "The route MRY-SFO has the highest delay rate at 61.5%. The MDW-SEA route follows with a delay rate of 59.1%.",
+      "backend": "duckdb",
+      "error": null
+    },
+    "how do cancellations change by month": {
+      "question": "How do cancellations change by month?",
+      "sql": "SELECT MONTH, ROUND(100.0 * AVG(CANCELLED), 1) AS PCT_CANCELLED, COUNT(*) AS FLIGHTS FROM FLIGHTS GROUP BY MONTH ORDER BY MONTH LIMIT 500",
+      "columns": [
+        "MONTH",
+        "PCT_CANCELLED",
+        "FLIGHTS"
+      ],
+      "rows": [
+        [
+          6,
+          1.7,
+          605214
+        ],
+        [
+          7,
+          2.6,
+          628568
+        ],
+        [
+          8,
+          1.9,
+          605520
+        ]
+      ],
+      "chart": {
+        "kind": "line",
+        "x": "MONTH",
+        "y": "PCT_CANCELLED"
+      },
+      "answer": "Cancellations rose from 1.7% in June to 2.6% in July. The rate decreased to 1.9% in August.",
+      "backend": "duckdb",
+      "error": null
+    }
+  },
+  "chat": {
+    "find me a flight okc den this friday": {
+      "text": "I found several options for your flight from OKC to DEN this Friday, Oct 30:\n\n| Airline | Flight | Dep. (Local) | Price | Risk |\n| :--- | :--- | :--- | :--- | :--- |\n| **Spirit** | NK1704 | 11:00 | $81 | Unknown |\n| **Frontier** | F9521 | 12:50 | $65 | Medium (26% delay) |\n| **Frontier** | F91621 | 14:45 | $124 | Medium (26% delay) |\n\n**Recommendation:** I suggest **Spirit NK1704** at 11:00 AM. While the risk is \"unknown\" due to low data, it is a non-stop flight and significantly faster than the cheaper Frontier options, which involve layovers and have a 26% chance of delay.\n\nWould you like me to watch one of these flights for you?"
+    },
+    "find me a flight okc to den this friday": {
+      "text": "I found several options for your flight from OKC to DEN this Friday, Oct 30:\n\n| Airline | Departure | Price | Risk | Notes |\n| :--- | :--- | :--- | :--- | :--- |\n| **Alaska** | 00:30 | $131 | Low | **Recommended**: Best balance of reliability and price. |\n| **Spirit** | 11:00 | $81 | Unknown | Cheapest option (non-stop). |\n| **Frontier** | 12:50 | $65 | Medium | Lowest price, but higher delay risk. |\n\nWould you like me to watch any of these flights for you?"
+    }
+  }
+}
