@@ -8,3 +8,5 @@ data/*.zip
 data/*.csv
 data/*.parquet
 .pytest_cache/
+data/*.gz
+data/watchlist.json
