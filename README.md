@@ -48,9 +48,18 @@ departures delayed 15+ minutes for the same carrier, origin and local departure 
 If that sample has fewer than 30 flights, it widens to carrier and origin.
 
 ## How Snowflake Cortex Code (CoCo) helped
-<!-- TODO: add CoCo screenshots to docs/ and one line on what CoCo did for you -->
-We used CoCo in Snowsight to profile the `FLIGHTS` table (columns, date range, gaps) and to draft
-and test the example queries the model uses as few-shot prompts.
+We used CoCo in Snowsight Workspaces to check the data and to cross-check the app's answers:
+
+- **Profiling the table.** CoCo ran 6 queries and confirmed 1,839,302 flights covering every one of
+  the 92 days from 2026-06-01 to 2026-08-31, 12 carriers and 353 airports. It surfaced the NULL patterns
+  our SQL has to handle: cancelled flights have NULL delay columns, and delay-cause columns are filled
+  only when `ARR_DEL15 = 1`.
+- **Independent check on "Which airline is most reliable?"** CoCo wrote and ran its own SQL. Its top 5
+  (Envoy Air 20.05%, Delta 21.78%, Alaska 22.39%, Republic 22.41%, SkyWest 23.64% of flights arriving
+  15+ min late) match what FlightWise's local model and SQL guardrail produce.
+
+![CoCo profiling the FLIGHTS table](docs/coco-1-profile.jpg)
+![CoCo writing and running the reliability SQL in a Snowflake workspace](docs/coco-2-reliable-airlines.jpg)
 
 ## Run it
 Prereqs: Python 3.11+, Node 22+, [Ollama](https://ollama.com) with `ollama pull gemma4:12b`.
