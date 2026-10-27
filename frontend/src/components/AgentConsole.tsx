@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { AlertTriangle, Brain, CheckCircle2, Database, Eye, ListChecks, Loader2, Plane, Search, Send, Sparkles, Square, Wrench } from 'lucide-react'
+import { AlertTriangle, Brain, CheckCircle2, ChevronRight, Database, Eye, ListChecks, Loader2, Plane, Search, Send, Sparkles, Square, Wrench } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 import { classify } from '../lib/format'
@@ -60,19 +60,19 @@ function ToolResult({ name, result, watched, live, onWatch }: { name: string; re
       return (
         <div className="flex flex-wrap gap-2">
           {c.flights.map((w) => (
-            <span key={w.id} className="inline-flex items-center gap-2 rounded-xl border border-ok/40 bg-ok/10 px-3 py-2 text-sm text-ok">
+            <span key={w.id} className="inline-flex items-center gap-2 rounded-lg bg-ok/10 px-3.5 py-2 text-sm text-ok">
               <Eye className="size-4" />
-              <span className="font-mono font-bold">{w.flight_number}</span>
-              <span className="text-ok/80">{name === 'watch_flight' ? 'on your watchlist, live updates on' : w.date}</span>
+              <span className="font-semibold">{w.flight_number}</span>
+              <span className="text-ink-80">{name === 'watch_flight' ? 'on your watchlist, live updates on' : w.date}</span>
             </span>
           ))}
         </div>
       )
     case 'error':
-      return <div className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">{c.text}</div>
+      return <div className="rounded-md bg-bad/8 px-3 py-2 text-sm text-bad">{c.text}</div>
     default:
       return (
-        <pre className="scrollbar-thin max-h-48 overflow-auto rounded-xl border border-line bg-ink-950/70 p-3 font-mono text-xs text-slate-400">
+        <pre className="scrollbar-thin max-h-48 overflow-auto rounded-sm bg-parchment p-3 font-mono text-xs tracking-normal text-ink-80">
           {typeof c.value === 'string' ? c.value : JSON.stringify(c.value, null, 2)}
         </pre>
       )
@@ -106,17 +106,17 @@ function Working({ afterTool }: { afterTool: boolean }) {
   const phases = afterTool ? PHASES_AFTER : PHASES_START
   const phase = phases[Math.min(phases.length - 1, Math.floor(secs / 2.5))]
   return (
-    <div className="glass relative inline-flex max-w-full items-center gap-3 overflow-hidden rounded-xl px-4 py-2.5">
-      <Loader2 className="size-4 shrink-0 animate-spin text-flap" />
+    <div className="glass-chip relative inline-flex max-w-full items-center gap-3 overflow-hidden rounded-full px-4 py-2">
+      <Loader2 className="size-4 shrink-0 animate-spin text-primary" />
       <AnimatePresence mode="wait">
-        <motion.span key={phase} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="text-sm font-semibold text-flap">
+        <motion.span key={phase} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="text-sm text-ink">
           {phase}…
         </motion.span>
       </AnimatePresence>
-      <span className="font-mono text-xs text-slate-500">{secs.toFixed(1)}s</span>
+      <span className="text-xs tabular-nums text-ink-48">{secs.toFixed(1)}s</span>
       <span className="hidden sm:flex h-4 items-end gap-0.5" aria-hidden>
         {[0, 1, 2, 3, 4].map((i) => (
-          <motion.span key={i} className="w-1 rounded-sm bg-flap/70" animate={{ height: ['20%', '100%', '35%', '80%', '20%'] }} transition={{ duration: 1.1, repeat: Infinity, delay: i * 0.12 }} />
+          <motion.span key={i} className="w-1 rounded-full bg-ink/30" animate={{ height: ['20%', '100%', '35%', '80%', '20%'] }} transition={{ duration: 1.1, repeat: Infinity, delay: i * 0.12 }} />
         ))}
       </span>
       <span className="scan-line pointer-events-none absolute inset-0" />
@@ -131,19 +131,19 @@ function ToolStep({ step, watched, live, onWatch }: { step: Extract<Step, { kind
     <div className="space-y-2">
       <div
         className={`relative inline-flex max-w-full items-center gap-2 overflow-hidden rounded-full border px-3 py-1.5 text-sm ${
-          step.done ? 'border-ok/30 bg-ok/5 text-slate-200' : 'border-flap/50 bg-flap/10 text-flap'
+          step.done ? 'glass-chip text-ink' : 'border-primary/30 bg-white text-primary shadow-soft'
         }`}
       >
         {step.done ? <CheckCircle2 className="size-4 text-ok shrink-0" /> : <Loader2 className="size-4 animate-spin shrink-0" />}
         <Icon className="size-4 shrink-0 opacity-80" />
         <span className="font-semibold whitespace-nowrap">{meta.label}</span>
-        <span className="font-mono text-xs text-slate-400 truncate">
+        <span className="font-mono text-xs tracking-normal text-ink-48 truncate">
           {step.name}({argSummary(step.args)})
         </span>
         {step.ms != null ? (
-          <span className="font-mono text-xs text-slate-500 shrink-0">{(step.ms / 1000).toFixed(1)}s</span>
+          <span className="text-xs tabular-nums text-ink-48 shrink-0">{(step.ms / 1000).toFixed(1)}s</span>
         ) : !step.done ? (
-          <Elapsed since={step.t0} className="font-mono text-xs text-flap shrink-0" />
+          <Elapsed since={step.t0} className="text-xs tabular-nums text-primary shrink-0" />
         ) : null}
         {!step.done ? <span className="scan-line pointer-events-none absolute inset-0" /> : null}
       </div>
@@ -299,26 +299,28 @@ export function AgentConsole({
     <div className="flex h-full min-h-0 flex-col">
       <div ref={scroller} className="scrollbar-thin flex-1 min-h-0 overflow-y-auto px-1 sm:px-2 pb-4">
         {turns.length === 0 ? (
-          <div className="flex h-full min-h-[22rem] flex-col items-center justify-center text-center px-4 py-10">
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mb-2 font-mono text-xs tracking-[0.4em] text-flap/80">
-              AGENT CONSOLE · ONLINE
+          <div className="flex h-full min-h-[22rem] flex-col items-center justify-center-safe text-center px-4 py-10">
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mb-3 inline-flex items-center gap-1.5 text-sm text-ink-48">
+              <span className="size-1.5 rounded-full bg-ok" /> Agent console · online
             </motion.div>
-            <motion.h2 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
+            <motion.h2 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-display-md sm:text-hero font-semibold text-ink">
               Where are we flying?
             </motion.h2>
-            <p className="mt-3 max-w-xl text-slate-400 sm:text-lg">An autonomous flight agent that tracks flights, watches them for you, and predicts delays from millions of real flights.</p>
-            <div className="mt-8 grid w-full max-w-2xl grid-cols-1 sm:grid-cols-2 gap-3">
+            <p className="mt-4 max-w-xl text-ink-80 sm:text-tagline sm:font-normal sm:tracking-normal">An autonomous flight agent that tracks flights, watches them for you, and predicts delays from millions of real flights.</p>
+            <div className="mt-10 grid w-full max-w-2xl grid-cols-1 sm:grid-cols-2 gap-3">
               {SUGGESTIONS.map((s, i) => (
                 <motion.button
                   key={s}
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + i * 0.07 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => send(s)}
-                  className="glass group rounded-xl px-4 py-3.5 text-left text-base text-slate-200 transition hover:border-flap/60 hover:text-white"
+                  className="glass-chip group flex items-start gap-3 rounded-lg px-5 py-4 text-left text-base text-ink transition-shadow hover:shadow-card"
                 >
-                  <Sparkles className="mb-1 size-4 text-flap opacity-70 group-hover:opacity-100" />
-                  {s}
+                  <Sparkles className="mt-1 size-4 shrink-0 text-ink-48 group-hover:text-primary" />
+                  <span className="flex-1">{s}</span>
+                  <ChevronRight className="mt-1 size-4 shrink-0 text-primary" />
                 </motion.button>
               ))}
             </div>
@@ -328,25 +330,25 @@ export function AgentConsole({
             {turns.map((t) => (
               <div key={t.id} className="space-y-4">
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex justify-end">
-                  <div className="max-w-[85%] rounded-2xl rounded-br-md bg-flap px-4 py-2.5 text-base sm:text-lg font-medium text-ink-950 shadow-lg shadow-flap/20">{t.user}</div>
+                  <div className="max-w-[85%] rounded-lg rounded-br-xs bg-ink px-4 py-2.5 text-base text-white shadow-soft">{t.user}</div>
                 </motion.div>
-                <div className="relative space-y-4 border-l-2 border-line/80 pl-5 sm:pl-6 ml-2">
+                <div className="relative space-y-4 border-l border-hairline pl-5 sm:pl-6 ml-2">
                   {t.steps.map((s, i) => (
                     <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="relative">
                       <span
-                        className={`absolute -left-[1.72rem] sm:-left-[1.97rem] top-2 size-3 rounded-full ring-4 ring-ink-950 ${
-                          s.kind === 'error' ? 'bg-bad' : s.kind === 'message' ? 'bg-flap' : s.kind === 'thinking' ? 'bg-slate-500' : s.done ? 'bg-ok' : 'bg-flap pulse-dot'
+                        className={`absolute -left-[1.66rem] sm:-left-[1.91rem] top-2 size-2.5 rounded-full ring-4 ring-white ${
+                          s.kind === 'error' ? 'bg-bad' : s.kind === 'message' ? 'bg-ink' : s.kind === 'thinking' ? 'bg-chip' : s.done ? 'bg-ok' : 'bg-primary pulse-dot'
                         }`}
                       />
                       {s.kind === 'thinking' ? (
-                        <div className="flex items-start gap-2 text-sm italic text-slate-400">
-                          <Brain className="mt-0.5 size-4 shrink-0 text-slate-500" />
+                        <div className="flex items-start gap-2 text-sm text-ink-48">
+                          <Brain className="mt-0.5 size-4 shrink-0 text-ink-48" />
                           <span>{s.text}</span>
                         </div>
                       ) : s.kind === 'tool' ? (
                         <ToolStep step={s} watched={watched} live={live} onWatch={onWatch} />
                       ) : s.kind === 'message' ? (
-                        <div className="glass rounded-2xl rounded-tl-md px-4 sm:px-5 py-3 text-base sm:text-lg leading-relaxed text-slate-100">
+                        <div className="glass-chip rounded-lg rounded-tl-xs px-4 sm:px-5 py-3 text-base text-ink">
                           {s.streamed ? (
                             <div className={`md ${s.streaming ? 'caret' : ''}`}>
                               <Markdown text={s.text} />
@@ -356,7 +358,7 @@ export function AgentConsole({
                           )}
                         </div>
                       ) : (
-                        <div className="flex items-start gap-2 rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
+                        <div className="flex items-start gap-2 rounded-md bg-bad/8 px-3 py-2 text-sm text-bad">
                           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                           {s.text}
                         </div>
@@ -365,7 +367,7 @@ export function AgentConsole({
                   ))}
                   {t.running && (t.steps.length === 0 || needsWorking(t.steps[t.steps.length - 1])) ? (
                     <div className="relative">
-                      <span className="absolute -left-[1.72rem] sm:-left-[1.97rem] top-3 size-3 rounded-full bg-flap pulse-dot ring-4 ring-ink-950" />
+                      <span className="absolute -left-[1.66rem] sm:-left-[1.91rem] top-3.5 size-2.5 rounded-full bg-primary pulse-dot ring-4 ring-white" />
                       <Working afterTool={t.steps.some((s) => s.kind === 'tool')} />
                     </div>
                   ) : null}
@@ -384,7 +386,7 @@ export function AgentConsole({
                 key={s}
                 disabled={running}
                 onClick={() => send(s)}
-                className="shrink-0 rounded-full border border-line bg-ink-800/70 px-3 py-1.5 text-xs sm:text-sm text-slate-300 transition hover:border-flap/60 hover:text-white disabled:opacity-40"
+                className="chip shrink-0 px-3.5 py-1.5 text-ink-80 hover:text-ink"
               >
                 {s}
               </button>
@@ -396,23 +398,23 @@ export function AgentConsole({
             e.preventDefault()
             send(input)
           }}
-          className="glass flex items-center gap-2 rounded-2xl p-2 focus-within:border-flap/60"
+          className="search-field"
         >
           <input
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask FlightWise anything about your trip…"
-            className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-base sm:text-lg text-white placeholder:text-slate-500 outline-none"
+            className="min-w-0 flex-1 bg-transparent px-3 py-2 text-base text-ink placeholder:text-ink-48 outline-none"
             aria-label="Message the agent"
           />
           {running ? (
-            <button type="button" onClick={() => abort.current?.abort()} className="grid size-11 place-items-center rounded-xl bg-ink-600 text-slate-200 hover:bg-ink-700" aria-label="Stop">
+            <button type="button" onClick={() => abort.current?.abort()} className="grid size-10 shrink-0 place-items-center rounded-full bg-chip/64 text-ink hover:bg-chip" aria-label="Stop">
               <Square className="size-4" />
             </button>
           ) : (
-            <button type="submit" disabled={!input.trim()} className="grid size-11 place-items-center rounded-xl bg-flap text-ink-950 transition hover:brightness-110 active:scale-95 disabled:opacity-40" aria-label="Send">
-              <Send className="size-5" />
+            <button type="submit" disabled={!input.trim()} className="btn-primary size-10 shrink-0 hover:bg-primary-focus" aria-label="Send">
+              <Send className="size-4" />
             </button>
           )}
         </form>

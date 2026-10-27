@@ -36,16 +36,20 @@ export function AskData() {
 
   return (
     <div className="scrollbar-thin h-full min-h-0 overflow-y-auto px-1 pb-6">
-      <div className="glass rounded-2xl p-4 sm:p-6">
+      <div className="glass-chip rounded-lg p-4 sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Ask the data</h2>
-            <p className="mt-1 text-slate-400">Plain English in, SQL out, run against US DOT on-time flight records.</p>
+            <h2 className="text-lead sm:text-display-md font-semibold text-ink">Ask the data</h2>
+            <p className="mt-1 text-ink-80">Plain English in, SQL out, run against US DOT on-time flight records.</p>
           </div>
-          <span className="inline-flex flex-wrap items-center gap-2 rounded-full border border-sky/40 bg-gradient-to-r from-sky/15 to-flap/10 px-3 py-1.5 text-xs font-semibold text-slate-200">
-            <Database className="size-3.5 text-sky" /> Powered by Snowflake
-            <span className="text-slate-500">+</span>
-            <Cpu className="size-3.5 text-flap" /> open-weight model running locally
+          <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg bg-white px-3 py-1.5 text-xs text-ink-80 shadow-soft sm:rounded-full">
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              <Database className="size-3.5 text-ink-48" /> Powered by Snowflake
+            </span>
+            <span className="text-ink-48">+</span>
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              <Cpu className="size-3.5 text-ink-48" /> open-weight model running locally
+            </span>
           </span>
         </div>
         <form
@@ -53,46 +57,46 @@ export function AskData() {
             e.preventDefault()
             run(q)
           }}
-          className="mt-5 flex items-center gap-2 rounded-xl border border-line bg-ink-950/60 p-2 focus-within:border-flap/60"
+          className="search-field mt-5"
         >
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="e.g. Which airport has the longest delays in July?"
-            className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-base sm:text-lg text-white placeholder:text-slate-500 outline-none"
+            className="min-w-0 flex-1 bg-transparent px-3 py-2 text-base text-ink placeholder:text-ink-48 outline-none"
             aria-label="Question for the data"
           />
           <button
             type="submit"
             disabled={!q.trim() || busy}
-            className="grid size-11 place-items-center rounded-lg bg-flap text-ink-950 transition hover:brightness-110 disabled:opacity-40"
+            className="btn-primary size-10 shrink-0 hover:bg-primary-focus"
             aria-label="Ask"
           >
             {busy ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5" />}
           </button>
         </form>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
           {EXAMPLES.map((e) => (
             <button
               key={e}
               disabled={busy}
               onClick={() => run(e)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-line bg-ink-800/70 px-3 py-1.5 text-sm text-slate-300 hover:border-flap/60 hover:text-white disabled:opacity-40"
+              className="chip shrink-0 whitespace-nowrap px-3.5 py-1.5 text-ink-80 hover:text-ink"
             >
-              <Sparkles className="size-3.5 text-flap" /> {e}
+              <Sparkles className="size-3.5 text-ink-48" /> {e}
             </button>
           ))}
         </div>
       </div>
 
       {busy ? (
-        <div className="glass relative mt-4 flex items-center gap-3 overflow-hidden rounded-2xl p-4 text-flap">
-          <Loader2 className="size-5 animate-spin" />
-          <span className="font-mono text-sm">translating to SQL → guard → running query…</span>
+        <div className="card relative mt-4 flex items-center gap-3 overflow-hidden p-4 text-ink-80">
+          <Loader2 className="size-5 animate-spin text-primary" />
+          <span className="text-sm">translating to SQL → guard → running query…</span>
           <span className="scan-line pointer-events-none absolute inset-0" />
         </div>
       ) : null}
-      {err ? <div className="mt-4 rounded-xl border border-bad/40 bg-bad/10 p-3 text-sm text-bad">{err}</div> : null}
+      {err ? <div className="mt-4 rounded-md bg-bad/8 p-3 text-sm text-bad">{err}</div> : null}
 
       <div className="mt-4 space-y-4">
         {results.map(({ id, r }) => (

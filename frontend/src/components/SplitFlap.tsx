@@ -15,7 +15,7 @@ export function SplitFlap({
   size = 'md',
   pad = 0,
   className = '',
-  tone = 'text-flap',
+  tone = 'text-white',
 }: {
   value: string
   size?: keyof typeof SIZES

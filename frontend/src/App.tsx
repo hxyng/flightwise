@@ -147,13 +147,13 @@ export default function App() {
   }, [watch])
 
   return (
-    <div className="ops-bg min-h-dvh">
+    <div className="min-h-dvh bg-parchment">
       <Header health={health} healthError={healthError} mock={MOCK} />
       <Toasts toasts={toasts} onDismiss={(id) => setToasts((ts) => ts.filter((t) => t.id !== id))} />
 
-      <main className="mx-auto grid max-w-[1600px] grid-cols-1 gap-4 px-3 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]">
-        <section className="glass flex h-[82dvh] min-h-[32rem] flex-col rounded-3xl p-3 sm:p-5 lg:h-[calc(100dvh-6.5rem)]">
-          <div className="mb-3 flex items-center gap-1 rounded-xl bg-ink-950/60 p-1 self-start">
+      <main className="mx-auto grid max-w-[1440px] grid-cols-1 gap-4 px-3 py-4 sm:gap-6 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]">
+        <section className="glass rounded-lg flex h-[82dvh] min-h-[32rem] flex-col p-3 sm:p-6 lg:h-[calc(100dvh-7rem)]">
+          <div className="glass-chip mb-3 flex items-center gap-1 self-start rounded-full p-1">
             {(
               [
                 { id: 'agent', label: 'Agent console', icon: Bot },
@@ -163,8 +163,8 @@ export default function App() {
               <button
                 key={t.id}
                 onClick={() => setMode(t.id)}
-                className={`inline-flex items-center gap-2 rounded-lg px-3 sm:px-4 py-2 text-sm font-semibold transition ${
-                  mode === t.id ? 'bg-flap text-ink-950 shadow-lg shadow-flap/20' : 'text-slate-400 hover:text-white'
+                className={`inline-flex items-center gap-2 rounded-full px-3.5 sm:px-4 py-1.5 text-sm ${
+                  mode === t.id ? 'bg-ink font-semibold text-white shadow-soft' : 'text-ink-80 hover:text-ink'
                 }`}
               >
                 <t.icon className="size-4" />
@@ -182,7 +182,7 @@ export default function App() {
           </div>
         </section>
 
-        <aside className="glass rounded-3xl p-4 sm:p-5 lg:sticky lg:top-[5.25rem] lg:h-[calc(100dvh-6.5rem)]">
+        <aside className="tile-dark on-dark p-4 sm:p-6 lg:sticky lg:top-[4.75rem] lg:h-[calc(100dvh-7rem)]">
           <Watchlist flights={watch} feed={feed} flashes={flashes} live={live} onRemove={onRemove} />
         </aside>
       </main>
