@@ -147,6 +147,7 @@ def _patch(monkeypatch, sqls, answer="Two sentences. Done."):
 
 def test_ask_happy(monkeypatch):
     calls = _patch(monkeypatch, [GOOD])
+    monkeypatch.setattr(nl2sql, "template_explain", lambda df: None)   # exercise the model path
     r = nl2sql.ask("best hour from OKC?")
     assert r.error is None and r.backend == "duckdb"
     assert r.columns[0] == "DEP_HOUR" and len(r.rows) > 5
@@ -194,6 +195,7 @@ def test_ask_llm_down_never_raises(monkeypatch):
 
 def test_ask_explain_failure_is_not_error(monkeypatch):
     _patch(monkeypatch, [GOOD])
+    monkeypatch.setattr(nl2sql, "template_explain", lambda df: None)   # exercise the model path
     monkeypatch.setattr(llm, "chat", lambda *a, **k: (_ for _ in ()).throw(ConnectionError("x")))
     r = nl2sql.ask("q")
     assert r.error is None and r.answer is None and r.rows
@@ -201,6 +203,7 @@ def test_ask_explain_failure_is_not_error(monkeypatch):
 
 def test_ask_explain_gets_at_most_50_rows(monkeypatch):
     calls = _patch(monkeypatch, ["SELECT FL_DATE, DEP_DELAY FROM FLIGHTS LIMIT 200"])
+    monkeypatch.setattr(nl2sql, "template_explain", lambda df: None)   # exercise the model path
     r = nl2sql.ask("q")
     assert len(r.rows) == 200
     payload = calls["chat"][0][-1]["content"]
@@ -216,3 +219,13 @@ def test_snowflake_decimals_become_float():
     df = db._decimals_to_float(df)
     assert df["PCT_DELAYED"].dtype == float
     assert nl2sql.pick_chart(df).y == "PCT_DELAYED"
+
+
+def test_template_explain_uses_exact_numbers():
+    import pandas as pd
+    from flightwise.data import nl2sql
+    df = pd.DataFrame({"DEP_HOUR": [5, 6, 21], "PCT_DELAYED": [6.1, 9.4, 63.6], "FLIGHTS": [120, 340, 80]})
+    text = nl2sql.template_explain(df)
+    assert text == "5 AM has the lowest % delayed at 6.1%, and 9 PM the highest at 63.6%. 3 hours compared."
+    assert nl2sql.template_explain(df.iloc[:0]) == "The query returned no rows."
+    assert nl2sql.template_explain(pd.DataFrame({"A": ["x", "y"], "B": ["p", "q"]})) is None   # model fallback

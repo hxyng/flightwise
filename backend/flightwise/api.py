@@ -69,9 +69,19 @@ async def chat_stream(message: str, history: list[dict] | None):
     """Relay agent events; on failure fall back to a cached answer, else a friendly error."""
     final = ""
     failed = False
+    if config.CACHE_FIRST and not history and (hit := demo_cache.get_answer(message, static_only=True)):
+        log.info("chat cache hit: %s", message)
+        yield _sse(AgentEvent(type="delta", data={"text": hit}))
+        yield _sse(AgentEvent(type="message", data={"text": hit, "cached": True}))
+        yield _sse(AgentEvent(type="done", data={"history": [
+            {"role": "user", "content": message}, {"role": "assistant", "content": hit}]}))
+        return
+    tools_used: set[str] = set()
     try:
         from .agent import run_agent   # lazy: built by B3
         async for ev in run_agent(message, history):
+            if ev.type == "tool_call":
+                tools_used.add(ev.data.get("name", ""))
             if ev.type == "message":
                 final = ev.data.get("text", "")
             if ev.type == "error":
@@ -84,7 +94,7 @@ async def chat_stream(message: str, history: list[dict] | None):
         log.warning("agent failed: %s", e)
         failed = True
     if final and not failed:
-        demo_cache.save_answer(message, final)
+        demo_cache.save_answer(message, final, tools_used)
     elif failed and not final:
         cached = demo_cache.get_answer(message)
         if cached:
@@ -104,6 +114,10 @@ async def chat(body: ChatBody):
 @app.post("/api/ask")
 async def ask(body: AskBody):
     result: QueryResult | None = None
+    # The BTS data is historical, so a saved answer to the same question is still correct.
+    if config.CACHE_FIRST and (hit := demo_cache.get_result(body.question, offline=False)):
+        log.info("ask cache hit: %s", body.question)
+        return JSONResponse(hit.model_dump(mode="json"), headers={"X-FlightWise-Cache": "hit"})
     try:
         from .data import nl2sql   # lazy: built by B2
         result = await asyncio.to_thread(nl2sql.ask, body.question)

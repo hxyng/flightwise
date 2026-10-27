@@ -101,7 +101,7 @@
         "y": "PCT_DELAYED"
       },
       "answer": "The best time to fly is at 5, as only 6.1% of flights are delayed. Delays increase significantly later in the day, reaching 63.6% by 21.",
-      "backend": "duckdb",
+      "backend": "snowflake",
       "error": null
     },
     "which airline is most reliable": {
@@ -198,55 +198,47 @@
     },
     "which day of the week has the worst delays": {
       "question": "Which day of the week has the worst delays?",
-      "sql": "SELECT DAY_OF_WEEK, ROUND(100.0 * AVG(DEP_DEL15), 1) AS PCT_DELAYED, ROUND(AVG(DEP_DELAY), 1) AS AVG_DEP_DELAY, COUNT(*) AS FLIGHTS FROM FLIGHTS GROUP BY DAY_OF_WEEK HAVING COUNT(*) >= 30 ORDER BY AVG_DEP_DELAY DESC LIMIT 500",
+      "sql": "SELECT DAY_OF_WEEK, ROUND(100.0 * AVG(DEP_DEL15), 1) AS PCT_DELAYED, ROUND(AVG(DEP_DELAY), 1) AS AVG_DEP_DELAY_MINS FROM FLIGHTS GROUP BY DAY_OF_WEEK HAVING COUNT(*) >= 30 ORDER BY PCT_DELAYED DESC LIMIT 500",
       "columns": [
         "DAY_OF_WEEK",
         "PCT_DELAYED",
-        "AVG_DEP_DELAY",
-        "FLIGHTS"
+        "AVG_DEP_DELAY_MINS"
       ],
       "rows": [
         [
           7,
           31.8,
-          22.8,
-          270113
-        ],
-        [
-          1,
-          29.4,
-          21.4,
-          290951
+          22.8
         ],
         [
           5,
           29.4,
-          21.3,
-          270270
+          21.3
+        ],
+        [
+          1,
+          29.4,
+          21.4
         ],
         [
           4,
           28.7,
-          19.9,
-          271268
+          19.9
         ],
         [
           6,
           26.2,
-          18.4,
-          235479
-        ],
-        [
-          2,
-          23.0,
-          14.9,
-          248626
+          18.4
         ],
         [
           3,
           23.4,
-          14.6,
-          252595
+          14.6
+        ],
+        [
+          2,
+          23.0,
+          14.9
         ]
       ],
       "chart": {
@@ -254,8 +246,8 @@
         "x": "DAY_OF_WEEK",
         "y": "PCT_DELAYED"
       },
-      "answer": "Day 7 has the worst delays with a 31.8% delay rate. The average delay on this day is 22.8.",
-      "backend": "duckdb",
+      "answer": "Day 7 has the worst delays with 31.8% of flights delayed. These flights experienced an average delay of 22.8 minutes.",
+      "backend": "snowflake",
       "error": null
     },
     "what are the worst routes for delays": {
@@ -360,6 +352,128 @@
       "answer": "Cancellations rose from 1.7% in June to 2.6% in July. The rate decreased to 1.9% in August.",
       "backend": "duckdb",
       "error": null
+    },
+    "which airport has the most cancelled flights": {
+      "question": "Which airport has the most cancelled flights?",
+      "sql": "SELECT ORIGIN, COUNT(*) AS CANCELLED_COUNT FROM FLIGHTS WHERE CANCELLED = 1 GROUP BY ORIGIN ORDER BY CANCELLED_COUNT DESC LIMIT 1",
+      "columns": [
+        "ORIGIN",
+        "CANCELLED_COUNT"
+      ],
+      "rows": [
+        [
+          "ORD",
+          3146
+        ]
+      ],
+      "chart": null,
+      "answer": "ORD had 3146 cancelled flights. This airport had the most cancellations.",
+      "backend": "snowflake",
+      "error": null
+    },
+    "when s the best time fly out of okc": {
+      "question": "When's the best time to fly out of OKC?",
+      "sql": "SELECT DEP_HOUR, ROUND(100.0 * AVG(DEP_DEL15), 1) AS PCT_DELAYED, COUNT(*) AS FLIGHTS FROM FLIGHTS WHERE ORIGIN = 'OKC' GROUP BY DEP_HOUR HAVING COUNT(*) >= 30 ORDER BY PCT_DELAYED ASC LIMIT 500",
+      "columns": [
+        "DEP_HOUR",
+        "PCT_DELAYED",
+        "FLIGHTS"
+      ],
+      "rows": [
+        [
+          5,
+          6.1,
+          418
+        ],
+        [
+          7,
+          6.7,
+          763
+        ],
+        [
+          6,
+          7.5,
+          628
+        ],
+        [
+          8,
+          12.7,
+          490
+        ],
+        [
+          9,
+          17.0,
+          156
+        ],
+        [
+          11,
+          18.0,
+          456
+        ],
+        [
+          10,
+          20.0,
+          146
+        ],
+        [
+          14,
+          23.1,
+          338
+        ],
+        [
+          12,
+          23.6,
+          356
+        ],
+        [
+          13,
+          26.1,
+          457
+        ],
+        [
+          15,
+          32.5,
+          339
+        ],
+        [
+          18,
+          34.0,
+          381
+        ],
+        [
+          17,
+          37.3,
+          376
+        ],
+        [
+          16,
+          37.7,
+          392
+        ],
+        [
+          19,
+          42.8,
+          360
+        ],
+        [
+          20,
+          44.1,
+          156
+        ],
+        [
+          21,
+          63.6,
+          44
+        ]
+      ],
+      "chart": {
+        "kind": "line",
+        "x": "DEP_HOUR",
+        "y": "PCT_DELAYED"
+      },
+      "answer": "5 AM has the lowest % delayed at 6.1%, and 9 PM the highest at 63.6%. 17 hours compared.",
+      "backend": "snowflake",
+      "error": null
     }
   },
   "chat": {
@@ -368,6 +482,24 @@
     },
     "find me a flight okc to den this friday": {
       "text": "I found several options for your flight from OKC to DEN this Friday, Oct 30:\n\n| Airline | Departure | Price | Risk | Notes |\n| :--- | :--- | :--- | :--- | :--- |\n| **Alaska** | 00:30 | $131 | Low | **Recommended**: Best balance of reliability and price. |\n| **Spirit** | 11:00 | $81 | Unknown | Cheapest option (non-stop). |\n| **Frontier** | 12:50 | $65 | Medium | Lowest price, but higher delay risk. |\n\nWould you like me to watch any of these flights for you?"
+    },
+    "find me a flight okc las this friday": {
+      "text": "I found several options for your flight from OKC to LAS this Friday, Oct 30:\n\n| Airline | Departure (Local) | Price | Stops | Risk |\n| :--- | :--- | :--- | :--- | :--- |\n| **Frontier** | **15:19** | **$215** | **1** | **Low** (Recommended) |\n| Southwest | 07:30 | $542 | 0 | Low |\n| Southwest | 02:05 | $542 | 0 | Medium |\n| United | 12:34 | $522 | 1 | Medium |\n\n**Recommendation:** The **Frontier** flight is the best balance of price and reliability.\n*   **Why:** It is the cheapest option ($215) and has a low delay risk (17.3% chance of >15 min delay).\n\nWould you like me to watch the Frontier flight for you?"
+    },
+    "track it and keep me posted": {
+      "text": "I've started watching Frontier flight **F91927** for you. I'll keep you updated on any changes to its status, gate, or delays."
+    },
+    "what am watching": {
+      "text": "Watching: AA100 (landed), F91927 (boarding).",
+      "static": false
+    },
+    "track aa100 and keep posted": {
+      "text": "**AA100** (American Airlines) CLT \u2192 PHX: **Boarding**, departs Mon 21:23 local, gate B35, on time.\n\nHistorical delay risk: **high**. 50% of 1,152 similar flights left 15+ min late.\n\nI'm watching **AA100** and will post gate, delay and status changes here.\n\nSince the flight has a high risk of delay, I recommend arriving at the gate early to account for potential delays.",
+      "static": false
+    },
+    "find a flight okc den this friday": {
+      "text": "Found 7 flights.\n\n**Agent pick: Alaska Airlines AS2396/AS489**, Fri 00:30 local, $131, 1 stop. Why: 14% of similar flights delayed 15+ min, $131, 1 stop(s).\n\nCheapest: Frontier Airlines F9521/F9916 at $65 (medium risk, 26% delayed).\n\nI recommend the Alaska flight for its lower delay risk, though the Frontier flight is the cheapest option available.",
+      "static": false
     }
   }
 }

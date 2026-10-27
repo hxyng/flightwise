@@ -20,8 +20,14 @@ DEMO_QUESTIONS = [
 _lock = threading.Lock()
 
 
+_FILLER = {"please", "hey", "hi", "flightwise", "can", "could", "you", "tell", "me", "show", "i", "want", "to", "know"}
+# Answers that only depend on the historical BTS data: safe to serve before asking the model.
+STATIC_TOOLS = {"query_delay_history", "delay_risk"}
+
+
 def normalize(question: str) -> str:
-    return " ".join(re.sub(r"[^a-z0-9 ]+", " ", question.lower()).split())
+    words = re.sub(r"[^a-z0-9 ]+", " ", question.lower()).split()
+    return " ".join(w for w in words if w not in _FILLER) or " ".join(words)
 
 
 def _load() -> dict:
@@ -46,23 +52,50 @@ def save_result(question: str, result: QueryResult) -> None:
     _store("ask", normalize(question), result.model_dump(mode="json"))
 
 
-def get_result(question: str) -> QueryResult | None:
-    raw = _load().get("ask", {}).get(normalize(question))
+def _lookup(section: str, question: str) -> dict | None:
+    """Find a saved entry. Keys saved before filler words were dropped from `normalize` still
+    match, because normalizing an old key gives the same string as normalizing the question."""
+    entries = _load().get(section, {})
+    key = normalize(question)
+    if key in entries:
+        return entries[key]
+    return next((v for k, v in entries.items() if normalize(k) == key), None)
+
+
+def get_result(question: str, offline: bool = True) -> QueryResult | None:
+    """Saved answer for a data question. `offline` adds the offline-mode note (fallback path).
+    The summary is re-rendered from the saved rows, so old wording never comes back."""
+    raw = _lookup("ask", question)
     if not raw:
         return None
     r = QueryResult.model_validate(raw)
-    r.answer = (r.answer or "") + CACHED_NOTE
+    try:
+        import pandas as pd
+
+        from .data.summary import template_explain
+        r.answer = template_explain(pd.DataFrame(r.rows, columns=r.columns)) or r.answer
+    except Exception:  # noqa: BLE001 - keep the saved answer if re-rendering fails
+        pass
+    if offline:
+        r.answer = (r.answer or "") + CACHED_NOTE
     return r
 
 
-def save_answer(question: str, text: str) -> None:
+def save_answer(question: str, text: str, tools: set[str] | None = None) -> None:
     if text.strip():
-        _store("chat", normalize(question), {"text": text})
+        static = bool(tools) and tools <= STATIC_TOOLS
+        _store("chat", normalize(question), {"text": text, "static": static})
 
 
-def get_answer(question: str) -> str | None:
-    raw = _load().get("chat", {}).get(normalize(question))
-    return (raw["text"] + CACHED_NOTE) if raw else None
+def get_answer(question: str, static_only: bool = False) -> str | None:
+    """Saved agent answer. With `static_only`, only answers built purely from historical data
+    (never live flight status or prices, which go stale) and without the offline note."""
+    raw = _lookup("chat", question)
+    if not raw:
+        return None
+    if static_only:
+        return raw["text"] if raw.get("static") else None
+    return raw["text"] + CACHED_NOTE
 
 
 def warm() -> int:

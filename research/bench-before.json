@@ -1,0 +1,160 @@
+{
+  "label": "before",
+  "total_s": 351.2,
+  "steps": [
+    {
+      "kind": "ask",
+      "text": "When's the best time to fly out of OKC?",
+      "wall_s": 124.5,
+      "first_text_s": null,
+      "cached_answer": false,
+      "llm_calls": 3,
+      "calls": [
+        {
+          "label": "text",
+          "prompt_tokens": 14,
+          "cached_tokens": 9,
+          "prefill_s": 0.14,
+          "output_tokens": 10,
+          "decode_s": 1.34,
+          "total_s": 1.96
+        },
+        {
+          "label": "sql",
+          "prompt_tokens": 1549,
+          "cached_tokens": 1526,
+          "prefill_s": 0.52,
+          "output_tokens": 73,
+          "decode_s": 98.87,
+          "total_s": 99.5
+        },
+        {
+          "label": "text",
+          "prompt_tokens": 338,
+          "cached_tokens": 333,
+          "prefill_s": 1.1,
+          "output_tokens": 44,
+          "decode_s": 19.45,
+          "total_s": 21.29
+        }
+      ],
+      "answer": "The best time to fly is at 5, as only 6.1% of flights are delayed. Delays increase significantly later in the day, reaching 63.6% by 21."
+    },
+    {
+      "kind": "chat",
+      "text": "Track AA100 and keep me posted",
+      "wall_s": 72.6,
+      "first_text_s": 72.6,
+      "cached_answer": false,
+      "llm_calls": 2,
+      "calls": [
+        {
+          "label": "agent-stream",
+          "prompt_tokens": 997,
+          "cached_tokens": 961,
+          "prefill_s": 1.21,
+          "output_tokens": 69,
+          "decode_s": 26.29,
+          "total_s": 27.81
+        },
+        {
+          "label": "agent-stream",
+          "prompt_tokens": 1599,
+          "cached_tokens": 992,
+          "prefill_s": 1.01,
+          "output_tokens": 121,
+          "decode_s": 42.09,
+          "total_s": 43.14
+        }
+      ],
+      "answer": "I've started watching **AA100** for you. Here is the current status:\n\n*   **Status:** Boarding\n*   **Departure:** Mon 21:20 (CLT)\n*   **Arrival:** Mon 22:36 (PHX)\n*   **Gate:** B35 (Terminal 2)\n*   **Delay Risk:** High (49.6% chance of delay > 15 min)\n\nI will notify you of any changes to the status,"
+    },
+    {
+      "kind": "ask",
+      "text": "Which airport has the most cancelled flights?",
+      "wall_s": 24.3,
+      "first_text_s": null,
+      "cached_answer": false,
+      "llm_calls": 2,
+      "calls": [
+        {
+          "label": "sql",
+          "prompt_tokens": 1545,
+          "cached_tokens": 1525,
+          "prefill_s": 0.44,
+          "output_tokens": 44,
+          "decode_s": 15.54,
+          "total_s": 16.75
+        },
+        {
+          "label": "text",
+          "prompt_tokens": 92,
+          "cached_tokens": 0,
+          "prefill_s": 0.43,
+          "output_tokens": 18,
+          "decode_s": 6.24,
+          "total_s": 7.16
+        }
+      ],
+      "answer": "ORD had 3146 cancelled flights. This airport had the most cancellations."
+    },
+    {
+      "kind": "chat",
+      "text": "Find me a flight OKC to DEN this Friday",
+      "wall_s": 84.8,
+      "first_text_s": 84.8,
+      "cached_answer": false,
+      "llm_calls": 2,
+      "calls": [
+        {
+          "label": "agent-stream",
+          "prompt_tokens": 997,
+          "cached_tokens": 960,
+          "prefill_s": 1.38,
+          "output_tokens": 37,
+          "decode_s": 13.4,
+          "total_s": 15.0
+        },
+        {
+          "label": "agent-stream",
+          "prompt_tokens": 1991,
+          "cached_tokens": 992,
+          "prefill_s": 2.84,
+          "output_tokens": 242,
+          "decode_s": 64.39,
+          "total_s": 67.28
+        }
+      ],
+      "answer": "I found several options for your flight from OKC to DEN on Friday, Oct 30:\n\n*   **Recommended:** Alaska Airlines (AS2396/AS489) - **$131**\n    *   Departs: 00:30 | Arrives: 02:54 (1 stop)\n    *   *Why:* Low delay risk (14%) and high reliability.\n*   **Cheapest:** Frontier Airlines (F9521/F9916) - **"
+    },
+    {
+      "kind": "ask",
+      "text": "Which day of the week has the worst delays?",
+      "wall_s": 45.0,
+      "first_text_s": null,
+      "cached_answer": false,
+      "llm_calls": 2,
+      "calls": [
+        {
+          "label": "sql",
+          "prompt_tokens": 1547,
+          "cached_tokens": 1524,
+          "prefill_s": 0.76,
+          "output_tokens": 83,
+          "decode_s": 30.69,
+          "total_s": 32.22
+        },
+        {
+          "label": "text",
+          "prompt_tokens": 202,
+          "cached_tokens": 197,
+          "prefill_s": 0.15,
+          "output_tokens": 33,
+          "decode_s": 11.71,
+          "total_s": 12.47
+        }
+      ],
+      "answer": "Day 7 has the worst delays with 31.8% of flights delayed. These flights experienced an average delay of 22.8 minutes."
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "label": "before",
+  "total_s": 568.5,
+  "steps": [
+    {
+      "kind": "ask",
+      "text": "When's the best time to fly out of OKC?",
+      "wall_s": 365.9,
+      "first_text_s": null,
+      "cached_answer": true,
+      "llm_calls": 1,
+      "calls": [
+        {
+          "label": "text",
+          "prompt_tokens": 14,
+          "cached_tokens": 9,
+          "prefill_s": 0.1,
+          "output_tokens": 10,
+          "decode_s": 0.36,
+          "total_s": 0.71
+        }
+      ],
+      "answer": "The best time to fly is at 5, as only 6.1% of flights are delayed. Delays increase significantly later in the day, reaching 63.6% by 21.\n\n_(cached answer: offline mode)_"
+    },
+    {
+      "kind": "chat",
+      "text": "Track AA100 and keep me posted",
+      "wall_s": 0.0,
+      "first_text_s": null,
+      "cached_answer": false,
+      "llm_calls": 0,
+      "calls": [],
+      "answer": ""
+    },
+    {
+      "kind": "ask",
+      "text": "Which airport has the most cancelled flights?",
+      "wall_s": 158.0,
+      "first_text_s": null,
+      "cached_answer": false,
+      "llm_calls": 2,
+      "calls": [
+        {
+          "label": "sql",
+          "prompt_tokens": 1545,
+          "cached_tokens": 1528,
+          "prefill_s": 35.25,
+          "output_tokens": 44,
+          "decode_s": 87.33,
+          "total_s": 153.36
+        },
+        {
+          "label": "text",
+          "prompt_tokens": 92,
+          "cached_tokens": 0,
+          "prefill_s": 0.22,
+          "output_tokens": 18,
+          "decode_s": 0.63,
+          "total_s": 1.35
+        }
+      ],
+      "answer": "ORD had 3146 cancelled flights. This airport had the most cancellations."
+    },
+    {
+      "kind": "chat",
+      "text": "Find me a flight OKC to DEN this Friday",
+      "wall_s": 0.0,
+      "first_text_s": 0.0,
+      "cached_answer": true,
+      "llm_calls": 0,
+      "calls": [],
+      "answer": "I found several options for your flight from OKC to DEN this Friday, Oct 30:\n\n| Airline | Departure | Price | Risk | Notes |\n| :--- | :--- | :--- | :--- | :--- |\n| **Alaska** | 00:30 | $131 | Low | **Recommended**: Best balance of reliability and price. |\n| **Spirit** | 11:00 | $81 | Unknown | Cheap"
+    },
+    {
+      "kind": "ask",
+      "text": "Which day of the week has the worst delays?",
+      "wall_s": 44.6,
+      "first_text_s": null,
+      "cached_answer": false,
+      "llm_calls": 2,
+      "calls": [
+        {
+          "label": "sql",
+          "prompt_tokens": 1547,
+          "cached_tokens": 1527,
+          "prefill_s": 0.4,
+          "output_tokens": 83,
+          "decode_s": 19.11,
+          "total_s": 19.65
+        },
+        {
+          "label": "text",
+          "prompt_tokens": 202,
+          "cached_tokens": 0,
+          "prefill_s": 18.5,
+          "output_tokens": 33,
+          "decode_s": 5.04,
+          "total_s": 24.3
+        }
+      ],
+      "answer": "Day 7 has the worst delays with 31.8% of flights delayed. These flights experienced an average delay of 22.8 minutes."
+    }
+  ]
+}

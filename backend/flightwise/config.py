@@ -39,3 +39,4 @@ DUCKDB_PARQUET = ROOT / "data" / "flights.parquet"   # offline fallback, built b
 
 WATCH_INTERVAL_S = int(_get("WATCH_INTERVAL_S", "20"))
 DEMO_CACHE = ROOT / "data" / "demo_cache.json"
+CACHE_FIRST = _get("FLIGHTWISE_CACHE_FIRST", "1") != "0"   # serve saved answers to historical-data questions first

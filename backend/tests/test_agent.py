@@ -140,7 +140,7 @@ def test_iteration_cap(monkeypatch, fake_tools):
     monkeypatch.setattr(agent.llm, "chat", fake)
     ev = run("loop forever")
     assert len(fake.calls) == agent.MAX_ITERS
-    assert fake.calls[-1]["tools"] is None           # last call forced to answer without tools
+    assert all(c["tools"] == agent.TOOLS for c in fake.calls)   # same tools every call keeps the prompt cache
     assert types(ev).count("tool_call") == agent.MAX_ITERS - 1
     assert ev[-2].type == "message" and "step limit" in ev[-2].data["text"]
     assert ev[-1].type == "done"
@@ -247,3 +247,27 @@ def test_recommendation_prefers_reliable_known_risk():
     agent._mark_recommended(offers)
     assert [bool(o.get("recommended")) for o in offers] == [True, False, False, False]
     assert "12%" in offers[0]["why"] and offers[0]["price"] == 80
+
+
+def test_system_prompt_static_prefix():
+    from datetime import date
+    a = agent.system_prompt(date(2026, 10, 26))
+    b = agent.system_prompt(date(2026, 10, 27))
+    first_diff = next(i for i, (x, y) in enumerate(zip(a, b)) if x != y)
+    assert first_diff > len(a) * 0.8      # only the date tail differs between days
+
+
+def test_history_is_append_only_then_cut_and_stubbed():
+    msgs = [{"role": "system", "content": "s"}]
+    for i in range(6):
+        msgs += [{"role": "user", "content": f"q{i}"},
+                 {"role": "tool", "tool_name": "search_flights", "content": "x" * 2000},
+                 {"role": "assistant", "content": f"a{i}"}]
+    short = agent._trim_history(msgs[:7])
+    assert [m["content"][:2] for m in short if m["role"] == "user"] == ["q0", "q1"]   # nothing dropped yet
+    assert all(len(m["content"]) < 400 for m in short if m["role"] == "tool")       # results stubbed
+    assert len(agent._trim_history(msgs)) == 18                                      # 18 <= HISTORY_MAX: kept whole
+    more = msgs + [{"role": "user", "content": "q6"}, {"role": "assistant", "content": "a6"},
+                   {"role": "user", "content": "q7"}]
+    cut = agent._trim_history(more)
+    assert len(cut) <= agent.HISTORY_KEEP and cut[0]["role"] == "user"

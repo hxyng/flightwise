@@ -108,6 +108,7 @@ def test_friendly_errors(client, monkeypatch):
 
 
 def test_ask_caches_and_falls_back(client, monkeypatch):
+    monkeypatch.setattr(config, "CACHE_FIRST", False)   # this test covers the offline fallback path
     q = "Which airline is most reliable?"
     r = client.post("/api/ask", json={"question": q})
     assert r.json()["answer"] == "one" and "x-flightwise-cache" not in r.headers
@@ -132,6 +133,7 @@ def agent(events):
 
 
 def test_chat_stream_and_cache(client, monkeypatch):
+    monkeypatch.setattr(config, "CACHE_FIRST", False)
     evs = [AgentEvent(type="thinking", data={"text": "hm"}),
            AgentEvent(type="message", data={"text": "Fly at 7am."}),
            AgentEvent(type="done", data={"history": []})]
@@ -166,3 +168,48 @@ def test_events_route_registered(client):
 
 def test_demo_cache_normalize():
     assert demo_cache.normalize("  When's the BEST time?? ") == demo_cache.normalize("when s the best time")
+
+
+def test_ask_cache_first(client, monkeypatch):
+    q = "Which airline is most reliable?"
+    first = client.post("/api/ask", json={"question": q})
+    assert "x-flightwise-cache" not in first.headers
+    nl = sys.modules["flightwise.data.nl2sql"]
+    calls = []
+
+    def must_not_run(*a, **k):
+        calls.append(a)
+        raise AssertionError("cache hit should skip the model")
+    monkeypatch.setattr(nl, "ask", must_not_run)
+    r = client.post("/api/ask", json={"question": "Can you tell me which airline is most reliable"})
+    assert r.headers["x-flightwise-cache"] == "hit" and calls == []           # model never called
+    assert not r.json()["answer"].endswith(demo_cache.CACHED_NOTE)            # no offline note on a hit
+
+
+def test_chat_cache_first_only_for_historical_answers(client, monkeypatch):
+    hist = [AgentEvent(type="tool_call", data={"name": "query_delay_history", "arguments": {}}),
+            AgentEvent(type="message", data={"text": "Fly at 5am."}),
+            AgentEvent(type="done", data={"history": []})]
+    live = [AgentEvent(type="tool_call", data={"name": "track_flight", "arguments": {}}),
+            AgentEvent(type="message", data={"text": "AA100 is boarding."}),
+            AgentEvent(type="done", data={"history": []})]
+    fake_module(monkeypatch, "flightwise.agent", run_agent=agent(hist))
+    client.post("/api/chat", json={"message": "Best time to fly out of OKC?"})
+    fake_module(monkeypatch, "flightwise.agent", run_agent=agent(live))
+    client.post("/api/chat", json={"message": "Track AA100"})
+
+    fake_module(monkeypatch, "flightwise.agent", run_agent=agent([RuntimeError("must not run")]))
+    got = sse_events(client.post("/api/chat", json={"message": "best time to fly out of okc"}).text)
+    assert [e for e, _ in got] == ["delta", "message", "done"] and got[1][1]["data"]["text"] == "Fly at 5am."
+    # live status is never served from the cache first: the agent runs (and here fails)
+    got = sse_events(client.post("/api/chat", json={"message": "Track AA100"}).text)
+    assert got[0][1]["data"]["text"].endswith(demo_cache.CACHED_NOTE)        # only the offline fallback
+
+
+def test_cache_lookup_matches_legacy_keys_and_rerenders(client):
+    import json
+    raw = {"question": "q", "columns": ["DAY_OF_WEEK", "PCT_DELAYED"], "rows": [[1, 20.5], [7, 31.8]],
+           "answer": "Day 7 has the worst delays."}
+    config.DEMO_CACHE.write_text(json.dumps({"ask": {"which day of the week has the worst delays": raw}}))
+    r = demo_cache.get_result("Which day of the week has the worst delays?", offline=False)
+    assert r.answer == "Monday has the lowest % delayed at 20.5%, and Sunday the highest at 31.8%. 2 days compared."

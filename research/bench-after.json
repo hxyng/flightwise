@@ -1,0 +1,113 @@
+{
+  "label": "after",
+  "total_s": 73.1,
+  "steps": [
+    {
+      "kind": "ask",
+      "text": "When's the best time to fly out of OKC?",
+      "wall_s": 7.3,
+      "first_text_s": null,
+      "cached_answer": false,
+      "llm_calls": 2,
+      "calls": [
+        {
+          "label": "text",
+          "prompt_tokens": 14,
+          "cached_tokens": 9,
+          "prefill_s": 0.34,
+          "output_tokens": 10,
+          "decode_s": 0.26,
+          "total_s": 0.78
+        },
+        {
+          "label": "sql",
+          "prompt_tokens": 1549,
+          "cached_tokens": 1523,
+          "prefill_s": 0.43,
+          "output_tokens": 73,
+          "decode_s": 3.6,
+          "total_s": 4.13
+        }
+      ],
+      "answer": "5 AM has the lowest % delayed at 6.1%, and 9 PM the highest at 63.6%. 17 hours compared."
+    },
+    {
+      "kind": "chat",
+      "text": "Track AA100 and keep me posted",
+      "wall_s": 30.8,
+      "first_text_s": 30.8,
+      "cached_answer": false,
+      "llm_calls": 2,
+      "calls": [
+        {
+          "label": "agent-stream",
+          "prompt_tokens": 998,
+          "cached_tokens": 0,
+          "prefill_s": 1.25,
+          "output_tokens": 69,
+          "decode_s": 16.19,
+          "total_s": 18.08
+        },
+        {
+          "label": "agent-stream",
+          "prompt_tokens": 1749,
+          "cached_tokens": 993,
+          "prefill_s": 4.22,
+          "output_tokens": 24,
+          "decode_s": 8.3,
+          "total_s": 12.57
+        }
+      ],
+      "answer": "**AA100** (American Airlines) CLT \u2192 PHX: **Boarding**, departs Mon 21:23 local, gate B35, on time.\n\nHistorical delay risk: **high**. 50% of 1,152 similar flights left 15+ min late.\n\nI'm watching **AA100** and will post gate, delay and status changes here.\n\nSince the flight has a high risk of delay, "
+    },
+    {
+      "kind": "ask",
+      "text": "Which airport has the most cancelled flights?",
+      "wall_s": 0.0,
+      "first_text_s": null,
+      "cached_answer": false,
+      "llm_calls": 0,
+      "calls": [],
+      "answer": "ORD had 3146 cancelled flights. This airport had the most cancellations."
+    },
+    {
+      "kind": "chat",
+      "text": "Find me a flight OKC to DEN this Friday",
+      "wall_s": 35.0,
+      "first_text_s": 35.0,
+      "cached_answer": false,
+      "llm_calls": 2,
+      "calls": [
+        {
+          "label": "agent-stream",
+          "prompt_tokens": 998,
+          "cached_tokens": 0,
+          "prefill_s": 5.77,
+          "output_tokens": 37,
+          "decode_s": 16.39,
+          "total_s": 22.2
+        },
+        {
+          "label": "agent-stream",
+          "prompt_tokens": 2152,
+          "cached_tokens": 993,
+          "prefill_s": 5.64,
+          "output_tokens": 22,
+          "decode_s": 4.85,
+          "total_s": 10.55
+        }
+      ],
+      "answer": "Found 7 flights.\n\n**Agent pick: Alaska Airlines AS2396/AS489**, Fri 00:30 local, $131, 1 stop. Why: 14% of similar flights delayed 15+ min, $131, 1 stop(s).\n\nCheapest: Frontier Airlines F9521/F9916 at $65 (medium risk, 26% delayed).\n\nI recommend the Alaska flight for its lower delay risk, though the"
+    },
+    {
+      "kind": "ask",
+      "text": "Which day of the week has the worst delays?",
+      "wall_s": 0.0,
+      "first_text_s": null,
+      "cached_answer": false,
+      "llm_calls": 0,
+      "calls": [],
+      "answer": "Day 7 has the worst delays with 31.8% of flights delayed. These flights experienced an average delay of 22.8 minutes."
+    }
+  ]
+}

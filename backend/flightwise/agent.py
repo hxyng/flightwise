@@ -8,17 +8,22 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import re
 from datetime import date as Date, datetime, timedelta
 from typing import Any, AsyncIterator, Callable
 
 from pydantic import BaseModel
 
-from . import llm
+from . import answers, llm
 from .models import AgentEvent
 
+log = logging.getLogger(__name__)
+
 MAX_ITERS = 6           # LLM calls per user turn; the last one is made without tools
-HISTORY_KEEP = 12       # messages returned in `done.history`
+HISTORY_KEEP = 8        # messages kept when history is cut back
+HISTORY_MAX = 20        # history grows append-only up to this many messages
+STUB_CHARS = 300        # finished turns keep only this much of each tool result
 LIST_CAP = 5            # list items shown to the model per tool result
 ROWS_CAP = 12           # nl2sql rows shown to the model
 RISK_TOP_N = 8   # risk lookups are cheap SQL; score every offer
@@ -124,8 +129,9 @@ def _date_context(today: Date) -> str:
 
 def system_prompt(today: Date | None = None) -> str:
     today = today or _today()
-    return f"""You are FlightWise, a proactive flight assistant. Today is {today.strftime('%A')} {today.isoformat()}.
-Next days: {_date_context(today)}. Always pass dates to tools as YYYY-MM-DD.
+    # Static rules first, the date last: Ollama reuses the cached prompt prefix, so anything that
+    # changes (the date) should come after everything that doesn't.
+    return f"""You are FlightWise, a proactive flight assistant.
 
 Use tools for every fact; never invent flight times, prices or percentages. Chain tools on your own:
 - "track/status of <flight>": call track_flight (it already includes delay risk). If the user wants to be kept
@@ -138,7 +144,9 @@ Use tools for every fact; never invent flight times, prices or percentages. Chai
 Quote times from the *_local fields (raw ISO times are UTC). If delay risk shows an error, say history is
 unavailable rather than calling the flight low-risk.
 Answer in short markdown, under ~100 words (a few bullets or a 3-row table) with concrete numbers from tool results only.
-If a tool returns an error, say so briefly and continue with what you have."""
+If a tool returns an error, say so briefly and continue with what you have.
+Always pass dates to tools as YYYY-MM-DD. Today is {today.strftime('%A')} {today.isoformat()}.
+Next days: {_date_context(today)}."""
 
 
 # --------------------------------------------------------------------------- tool backends
@@ -388,10 +396,22 @@ def parse_text_tool_calls(content: str | None) -> list[dict]:
 # --------------------------------------------------------------------------- loop
 
 def _trim_history(msgs: list[dict]) -> list[dict]:
-    out = [m for m in msgs if m.get("role") != "system"][-HISTORY_KEEP:]
+    """History for the next turn, shaped to keep Ollama's prompt cache warm:
+    - append-only until it passes HISTORY_MAX, then cut back to HISTORY_KEEP in one go
+      (a sliding window would shift every message, and the cache, on every turn);
+    - tool results from finished turns become one-line stubs, so they stop costing prefill."""
+    out = [m for m in msgs if m.get("role") != "system"]
+    if len(out) > HISTORY_MAX:
+        out = out[-HISTORY_KEEP:]
     while out and out[0].get("role") != "user":   # never start on an orphan tool result
         out.pop(0)
-    return out
+    return [_stub_tool_result(m) for m in out]
+
+
+def _stub_tool_result(m: dict) -> dict:
+    if m.get("role") != "tool" or len(m.get("content") or "") <= STUB_CHARS:
+        return m
+    return {**m, "content": m["content"][:STUB_CHARS] + "...(truncated; call the tool again for details)"}
 
 
 def _event(type_: str, **data: Any) -> AgentEvent:
@@ -399,10 +419,13 @@ def _event(type_: str, **data: Any) -> AgentEvent:
 
 
 STREAM = True   # stream answer tokens to the UI as "delta" events; tests turn it off
+TEMPLATE_ANSWERS = True   # facts come from answers.render(); the model adds one sentence
+SENTENCE_TOKENS = 60
 _CALL_START = re.compile(r"^\s*(\{|`|\[|call:|(" + "|".join(FUNCS) + r")\s*\()")
 
 
-async def _model_turn(msgs: list[dict], tools: list[dict] | None) -> AsyncIterator[AgentEvent | dict]:
+async def _model_turn(msgs: list[dict], tools: list[dict] | None,
+                      max_tokens: int | None = None) -> AsyncIterator[AgentEvent | dict]:
     """One model turn. Yields "delta" AgentEvents while text streams, then the assembled
     assistant message dict last. Text that looks like a hand-written tool call isn't streamed."""
     if not STREAM:
@@ -413,7 +436,7 @@ async def _model_turn(msgs: list[dict], tools: list[dict] | None) -> AsyncIterat
 
     def pump() -> None:
         try:
-            for chunk in llm.chat_stream(msgs, tools):
+            for chunk in llm.chat_stream(msgs, tools, max_tokens=max_tokens):
                 loop.call_soon_threadsafe(q.put_nowait, chunk)
             loop.call_soon_threadsafe(q.put_nowait, None)
         except Exception as e:  # noqa: BLE001
@@ -443,6 +466,24 @@ async def _model_turn(msgs: list[dict], tools: list[dict] | None) -> AsyncIterat
     yield reply
 
 
+async def _templated_answer(msgs: list[dict], summary: str) -> AsyncIterator[AgentEvent]:
+    """Stream the rendered facts at once, then one short model-written sentence of advice.
+    The extra prompt goes after the cached conversation, so only it needs prefilling."""
+    yield _event("delta", text=summary)
+    note = [{"role": "user", "content": answers.SENTENCE_PROMPT.format(summary=summary)}]
+    advice = ""
+    try:
+        yield _event("delta", text="\n\n")
+        async for out in _model_turn(msgs + note, TOOLS, max_tokens=SENTENCE_TOKENS):
+            if isinstance(out, AgentEvent):
+                yield out
+            else:
+                advice = (out.get("content") or "").strip()
+    except Exception as e:  # noqa: BLE001 - the facts are already shown; advice is optional
+        log.warning("advice sentence failed: %s", e)
+    yield _event("message", text=f"{summary}\n\n{advice}".strip())
+
+
 async def run_agent(message: str, history: list[dict] | None = None) -> AsyncIterator[AgentEvent]:
     msgs: list[dict] = [{"role": "system", "content": system_prompt()}]
     msgs += [m for m in (history or []) if m.get("role") != "system"]
@@ -450,11 +491,14 @@ async def run_agent(message: str, history: list[dict] | None = None) -> AsyncIte
 
     final_text: str | None = None
     failed = False
+    turn_results: list[tuple[str, Any, bool]] = []
     for it in range(MAX_ITERS):
         last = it == MAX_ITERS - 1
         try:
             reply: dict = {}
-            async for out in _model_turn(msgs, None if last else TOOLS):
+            # Always send the same tools (a different tool list changes the prompt from the first
+            # token and loses the cache); on the last step any tool calls are ignored below.
+            async for out in _model_turn(msgs, TOOLS):
                 if isinstance(out, AgentEvent):
                     yield out
                 else:
@@ -491,6 +535,17 @@ async def run_agent(message: str, history: list[dict] | None = None) -> AsyncIte
             result, ok = await call_tool(name, args)
             yield _event("tool_result", name=name, result=result, ok=ok)
             msgs.append({"role": "tool", "tool_name": name, "content": to_model_text(result)})
+            turn_results.append((name, result, ok))
+
+        summary = answers.render(message, turn_results) if TEMPLATE_ANSWERS else None
+        if summary is not None:
+            async for ev in _templated_answer(msgs, summary):
+                if ev.type == "message":
+                    final_text = ev.data["text"]
+                else:
+                    yield ev
+            msgs.append({"role": "assistant", "content": final_text})
+            break
 
     if final_text is None and not failed:
         final_text = "I couldn't finish that within my step limit. Try a more specific question."

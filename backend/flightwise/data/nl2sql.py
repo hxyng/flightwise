@@ -6,22 +6,20 @@ import decimal
 import json
 import logging
 import math
-import re
 
 import pandas as pd
 
 from .. import llm
-from ..models import ChartSpec, DelayRisk, QueryResult
+from ..models import DelayRisk, QueryResult
 from . import db
 from .examples import EXAMPLES
 from .guard import GuardError, check_sql  # noqa: F401  (check_sql re-exported for the contract)
+from .summary import pick_chart, template_explain  # noqa: F401  (re-exported)
 
 log = logging.getLogger(__name__)
 
 SQL_SCHEMA = {"type": "object", "properties": {"sql": {"type": "string"}}, "required": ["sql"]}
 MAX_EXPLAIN_ROWS = 50
-_ORDINAL_X = re.compile(r"(^|_)(HOUR|MONTH|DATE|DAY|YEAR|WEEK|TIME|DOW|WEEKDAY)($|_)")
-_LINE_X = re.compile(r"(^|_)(HOUR|MONTH|DATE|YEAR|TIME)($|_)")
 
 
 def _system_prompt() -> str:
@@ -58,23 +56,6 @@ def _rows(df: pd.DataFrame) -> list[list]:
     return [[_json_safe(None if pd.isna(v) is True else v) for v in row] for row in df.itertuples(index=False, name=None)]
 
 
-def pick_chart(df: pd.DataFrame) -> ChartSpec | None:
-    """x = first non-numeric or ordinal-named column, y = first other numeric column.
-    Time-like x (hour/month/date/year) -> line, otherwise bar."""
-    if len(df) < 2 or df.shape[1] < 2:
-        return None
-    cols = list(df.columns)
-    numeric = {c for c in cols if pd.api.types.is_numeric_dtype(df[c]) and not pd.api.types.is_bool_dtype(df[c])}
-    x = next((c for c in cols if c not in numeric or _ORDINAL_X.search(str(c).upper())), None)
-    if x is None:
-        return None
-    y = next((c for c in cols if c in numeric and c != x), None)
-    if y is None:
-        return None
-    kind = "line" if (_LINE_X.search(str(x).upper()) or pd.api.types.is_datetime64_any_dtype(df[x])) else "bar"
-    return ChartSpec(kind=kind, x=str(x), y=str(y))
-
-
 def _generate(messages: list[dict]) -> str:
     out = llm.chat_json(messages, SQL_SCHEMA)
     sql = out.get("sql") if isinstance(out, dict) else None
@@ -84,6 +65,8 @@ def _generate(messages: list[dict]) -> str:
 
 
 def _explain(question: str, df: pd.DataFrame) -> str | None:
+    if text := template_explain(df):
+        return text
     data = df.head(MAX_EXPLAIN_ROWS)
     payload = json.dumps({"columns": list(data.columns), "rows": _rows(data)})
     msgs = [
