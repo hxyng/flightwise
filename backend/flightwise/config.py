@@ -26,6 +26,8 @@ SNOWFLAKE = {
     "account": _get("SNOWFLAKE_ACCOUNT"),
     "user": _get("SNOWFLAKE_USER"),
     "password": _get("SNOWFLAKE_PASSWORD"),      # password or PAT
+    "private_key_file": _get("SNOWFLAKE_PRIVATE_KEY_FILE"),   # key-pair auth (for Google/SSO users)
+    "authenticator": _get("SNOWFLAKE_AUTHENTICATOR"),         # e.g. SNOWFLAKE_JWT, externalbrowser
     "warehouse": _get("SNOWFLAKE_WAREHOUSE", "COMPUTE_WH"),
     "database": _get("SNOWFLAKE_DATABASE", "FLIGHTWISE"),
     "schema": _get("SNOWFLAKE_SCHEMA", "PUBLIC"),

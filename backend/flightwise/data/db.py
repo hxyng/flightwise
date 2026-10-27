@@ -4,6 +4,7 @@ One lazy connection per process; Snowflake connect failure falls back to DuckDB.
 """
 from __future__ import annotations
 
+import decimal
 import logging
 import threading
 from typing import Any
@@ -96,6 +97,17 @@ def run_query(sql: str) -> pd.DataFrame:
         else:
             df = con.execute(sql).fetchdf()
     df.columns = [str(c).upper() for c in df.columns]
+    return _decimals_to_float(df)
+
+
+def _decimals_to_float(df: pd.DataFrame) -> pd.DataFrame:
+    """Snowflake returns NUMBER(p,s) results (e.g. ROUND(...)) as object columns of Decimal;
+    make them float so charts and JSON treat them as numbers, same as DuckDB."""
+    for c in df.columns:
+        if df[c].dtype == object:
+            vals = df[c].dropna()
+            if len(vals) and all(isinstance(v, decimal.Decimal) for v in vals):
+                df[c] = df[c].astype(float)
     return df
 
 

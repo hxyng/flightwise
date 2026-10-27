@@ -205,3 +205,14 @@ def test_ask_explain_gets_at_most_50_rows(monkeypatch):
     assert len(r.rows) == 200
     payload = calls["chat"][0][-1]["content"]
     assert len(json.loads(payload.split("Data: ", 1)[1])["rows"]) == 50
+
+
+def test_snowflake_decimals_become_float():
+    import decimal
+    import pandas as pd
+    from flightwise.data import db, nl2sql
+    df = pd.DataFrame({"DEP_HOUR": [5, 6], "PCT_DELAYED": [decimal.Decimal("6.1"), decimal.Decimal("9.4")],
+                       "FLIGHTS": [120, 340]})
+    df = db._decimals_to_float(df)
+    assert df["PCT_DELAYED"].dtype == float
+    assert nl2sql.pick_chart(df).y == "PCT_DELAYED"
